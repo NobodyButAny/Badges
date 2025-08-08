@@ -1,0 +1,4 @@
+name: Badges
+version: '1.0-SNAPSHOT'
+main: com.batoni.badges.Badges
+api-version: '1.21'
