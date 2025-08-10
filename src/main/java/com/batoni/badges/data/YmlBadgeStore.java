@@ -1,7 +1,6 @@
 package com.batoni.badges.data;
 
 import com.batoni.badges.Badges;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -43,16 +42,23 @@ public class YmlBadgeStore {
         }
     }
 
+    public List<UUID> getRegisteredIds() {
+        return fileConfiguration.getKeys(false)
+                .stream()
+                .map(UUID::fromString)
+                .toList();
+    }
+
     public boolean hasBadge(UUID uuid, String badgeId) {
         return getOwnedBadges(uuid).contains(badgeId);
     }
 
-    public Set<String> getOwnedBadges(UUID uuid) {
-        return new HashSet<>(fileConfiguration.getStringList(uuid + ".owned"));
+    public List<String> getOwnedBadges(UUID uuid) {
+        return fileConfiguration.getStringList(uuid + ".owned");
     }
 
     public boolean addOwnedBadges(UUID uuid, Collection<String> badgeIds) {
-        Set<String> ownedBadges = getOwnedBadges(uuid);
+        List<String> ownedBadges = getOwnedBadges(uuid);
         ownedBadges.addAll(badgeIds);
         fileConfiguration.set(uuid + ".owned", ownedBadges);
 
@@ -72,11 +78,15 @@ public class YmlBadgeStore {
 
 
     public boolean removeOwnedBadges(UUID uuid, Collection<String> badgeIds) {
-        Set<String> ownedBadges = getOwnedBadges(uuid);
+        List<String> ownedBadges = getOwnedBadges(uuid);
         ownedBadges.removeAll(badgeIds);
         fileConfiguration.set(uuid + ".owned", ownedBadges);
         tryUpdatePlayerName(uuid);
         return save();
+    }
+
+    public boolean removeOwnedBadges(UUID uuid, String... badgeIds) {
+        return removeOwnedBadges(uuid, Arrays.asList(badgeIds));
     }
 
     public List<String> getWearingBadges(UUID uuid) {
@@ -87,5 +97,17 @@ public class YmlBadgeStore {
         fileConfiguration.set(uuid + ".wearing", badgeIds);
         tryUpdatePlayerName(uuid);
         return save();
+    }
+
+    public boolean removeWearingBadges(UUID uuid, List<String> badgeIds) {
+        List<String> wearingBadges = getWearingBadges(uuid);
+        wearingBadges.removeAll(badgeIds);
+        fileConfiguration.set(uuid+".wearing", wearingBadges);
+        tryUpdatePlayerName(uuid);
+        return save();
+    }
+
+    public boolean removeWearingBadges(UUID uuid, String... badgeIds) {
+        return removeWearingBadges(uuid, Arrays.asList(badgeIds));
     }
 }

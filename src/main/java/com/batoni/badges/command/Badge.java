@@ -21,40 +21,77 @@ public class Badge {
         var grantCommand = Commands.literal("grant")
                 .requires(Util.checkPermission("badges.grant"))
                 .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(Util.suggestOnlinePlayers())
                         .then(Commands.argument("badge", StringArgumentType.word())
                                 .executes(Badge::grantBadge)));
+
+        var takeCommand = Commands.literal("take")
+                .requires(Util.checkPermission("badges.take"))
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(Util.suggestRegisteredPlayers())
+                        .then(Commands.argument("badge", StringArgumentType.word())
+                                .executes(Badge::takeOwned)));
 
         var listCommand = Commands.literal("list")
                 .executes(Badge::list)
                 .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(Util.suggestOnlinePlayers())
                         .executes(Badge::listPlayer));
 
         return Commands.literal("badge")
                 .then(grantCommand)
+                .then(takeCommand)
                 .then(listCommand)
                 .build();
     }
 
     private static int grantBadge(CommandContext<CommandSourceStack> ctx) {
-        var server = Badges.getInstance().getServer();
+        var sender = ctx.getSource().getSender();
 
-        String playerName = StringArgumentType.getString(ctx, "player");
+        Player player = Util.getPlayerArgument(ctx, "player");
         String badgeId = StringArgumentType.getString(ctx, "badge");
 
-        if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
-            ctx.getSource().getSender().sendMessage(badgeId + "not found");
+        if (player == null) {
+            sender.sendMessage("Player not found");
             return Command.SINGLE_SUCCESS;
         }
 
-        Player player = server.getPlayerExact(playerName);
-        if (player == null) {
-            ctx.getSource().getSender().sendMessage(playerName + "not found");
+        if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
+            sender.sendMessage(badgeId + " not found");
             return Command.SINGLE_SUCCESS;
         }
 
         var badgeStore = Badges.getBadgeStore();
-        badgeStore.addOwnedBadges(player.getUniqueId(), badgeId);
 
+        if (badgeStore.getOwnedBadges(player.getUniqueId()).contains(badgeId)) {
+            sender.sendMessage("%s already owns %s".formatted(player.getName(), badgeId));
+            return Command.SINGLE_SUCCESS;
+        }
+
+        badgeStore.addOwnedBadges(player.getUniqueId(), badgeId);
+        sender.sendMessage("Successfully granted %s to %s".formatted(badgeId, player.getName()));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int takeOwned(CommandContext<CommandSourceStack> ctx) {
+        var sender = ctx.getSource().getSender();
+
+        Player player = Util.getPlayerArgument(ctx, "player");
+        String badgeId = StringArgumentType.getString(ctx, "badge");
+
+        if (player == null) {
+            sender.sendMessage("Player not found");
+            return Command.SINGLE_SUCCESS;
+        }
+
+        if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
+            sender.sendMessage(badgeId + " not found");
+            return Command.SINGLE_SUCCESS;
+        }
+
+        Badges.getBadgeStore().removeOwnedBadges(player.getUniqueId(), badgeId);
+        Badges.getBadgeStore().removeWearingBadges(player.getUniqueId(), badgeId);
+        sender.sendMessage("Successfully taken %s from %s".formatted(badgeId, player.getName()));
         return Command.SINGLE_SUCCESS;
     }
 
@@ -74,15 +111,14 @@ public class Badge {
 
     private static int listPlayer(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
-        var server = Badges.getInstance().getServer();
         Map<String, String> badgeRegistry = Badges.getRegisteredBadges();
 
-        String playerName = StringArgumentType.getString(ctx, "player");
-        Player player = server.getPlayerExact(playerName);
+        Player player = Util.getPlayerArgument(ctx, "player");
         if (player == null) {
-            ctx.getSource().getSender().sendMessage(playerName + "not found");
+            ctx.getSource().getSender().sendMessage("Player not found");
             return Command.SINGLE_SUCCESS;
         }
+        String playerName = player.getName();
 
         sender.sendMessage("Currently owned badges (%s): ".formatted(playerName));
         for (String badgeId : Badges.getBadgeStore().getOwnedBadges(player.getUniqueId())) {
