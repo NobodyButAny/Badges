@@ -10,6 +10,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class Badges extends JavaPlugin {
@@ -18,7 +19,7 @@ public final class Badges extends JavaPlugin {
 
     private static LuckPerms luckPerms;
     private static YmlBadgeStore badgeStore;
-    private static Map<String, String> registeredBadges = new HashMap<>();
+    private static Map<String, String> registeredBadges = new ConcurrentHashMap<>();
 
     public static LuckPerms getLuckPerms() {
         return luckPerms;

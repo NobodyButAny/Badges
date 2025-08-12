@@ -6,7 +6,13 @@ commands:
   badge:
 
 permissions:
+  badges.list:
+    default: true
   badges.grant:
     default: true
   badges.take:
+    default: true
+  badges.wear:
+    default: true
+  badges.remove:
     default: true
