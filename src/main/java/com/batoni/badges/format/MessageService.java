@@ -5,6 +5,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import net.kyori.adventure.text.minimessage.tag.standard.StandardTags;
 import org.bukkit.command.CommandSender;
 
 import java.io.File;
@@ -55,11 +56,14 @@ public class MessageService {
 
         this.formatters = new ConcurrentHashMap<>();
         this.locales.values().forEach(locale -> {
-            var tagResolverBuilder = TagResolver.builder();
-            locale.aliases().forEach((k, v) -> {
-                tagResolverBuilder.tag(k, Tag.inserting(MM.deserialize(v)));
-            });
-            var formatter = MiniMessage.builder().tags(tagResolverBuilder.build()).build();
+            var tags = TagResolver.builder();
+            tags.resolver(TagResolver.standard());
+            locale.aliases().forEach((alias, replacement) ->
+                    tags.resolver(TagResolver.resolver(alias, (args, ctx) ->
+                                    Tag.preProcessParsed(replacement)
+                    ))
+            );
+            var formatter = MiniMessage.builder().tags(tags.build()).build();
             this.formatters.put(locale.language(), formatter);
         });
     }

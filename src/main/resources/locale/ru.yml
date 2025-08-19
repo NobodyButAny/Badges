@@ -1,0 +1,34 @@
+aliases:
+  good: <green>
+  warn: <orange>
+  bad: <red>
+
+messages:
+  # General
+  obj_not_found: "Объект <obj> не найден!"
+  player_not_found: "Игрок <player> не найден"
+  no_badges_registered: "Значки не зарегистрированы"
+
+  # Grant command
+  badge_grant_success: "Значок <badge> успешно выдан игроку <player>"
+  badge_grant_already_owned: "Игрок <player> уже имеет значок <badge>"
+
+  # Take command
+  badge_take_success: "Значок <badge> был забран у игрока <player>"
+
+  # Wear command
+  badge_wear_only_players: "Только игроки могут носить значки!"
+  badge_wear_none_owned: "У вас нет значков!"
+  badge_wear_not_owned: "У вас нет значка <badge>"
+  badge_wear_invalid_slot: "Можно назначить максимум <max_slots> слотов"
+  badge_wear_slot_updated: "Слот <slot> успешно обновлён"
+
+  # Remove command
+  badge_remove_success: "Значок <badge> успешно снят"
+
+  # List command
+  badge_list_all: "Загруженные значки:"
+  badge_list_all_none: "Нет"
+  badge_list_player_owned: "Значки игрока <player>:"
+  badge_list_player_worn: "Надетые значки игрока <player>:"
+  badge_list_entry: "- <badge_id> (<badge_name>)"

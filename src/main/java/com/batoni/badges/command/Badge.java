@@ -65,89 +65,161 @@ public class Badge {
 
     private static int grantBadge(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
+        var messageService = Badges.getMessageService();
 
         Player player = Util.getPlayerArgument(ctx, "player");
         String badgeId = StringArgumentType.getString(ctx, "badge");
 
         if (player == null) {
-            sender.sendMessage("Player not found");
+            messageService.sendMessage(
+                    sender,
+                    "obj_not_found",
+                    Map.of("obj", "Player"));
             return Command.SINGLE_SUCCESS;
         }
 
         if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
-            sender.sendMessage(badgeId + " not found");
+            messageService.sendMessage(
+                    sender,
+                    "obj_not_found",
+                    Map.of("obj", badgeId));
             return Command.SINGLE_SUCCESS;
         }
 
         var badgeStore = Badges.getBadgeStore();
 
         if (badgeStore.getOwnedBadges(player.getUniqueId()).contains(badgeId)) {
-            sender.sendMessage("%s already owns %s".formatted(player.getName(), badgeId));
+            messageService.sendMessage(
+                    sender,
+                    "badge_grant_already_owned",
+                    Map.of(
+                            "player", player.getName(),
+                            "badge", badgeId
+                    )
+            );
             return Command.SINGLE_SUCCESS;
         }
 
         badgeStore.addOwnedBadges(player.getUniqueId(), badgeId);
-        sender.sendMessage("Successfully granted %s to %s".formatted(badgeId, player.getName()));
+        messageService.sendMessage(
+                sender,
+                "badge_grant_success",
+                Map.of(
+                        "player", player.getName(),
+                        "badge", badgeId
+                )
+        );
         return Command.SINGLE_SUCCESS;
     }
 
     private static int takeOwned(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
+        var messageService = Badges.getMessageService();
 
         Player player = Util.getPlayerArgument(ctx, "player");
         String badgeId = StringArgumentType.getString(ctx, "badge");
 
         if (player == null) {
-            sender.sendMessage("Player not found");
+            messageService.sendMessage(
+                    sender,
+                    "obj_not_found",
+                    Map.of("obj", "Player"));
             return Command.SINGLE_SUCCESS;
         }
 
         if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
-            sender.sendMessage(badgeId + " not found");
+            messageService.sendMessage(
+                    sender,
+                    "obj_not_found",
+                    Map.of("obj", badgeId));
             return Command.SINGLE_SUCCESS;
         }
 
         Badges.getBadgeStore().removeOwnedBadges(player.getUniqueId(), badgeId);
         Badges.getBadgeStore().removeWearingBadges(player.getUniqueId(), badgeId);
-        sender.sendMessage("Successfully taken %s from %s".formatted(badgeId, player.getName()));
+        messageService.sendMessage(
+                sender,
+                "badge_take_success",
+                Map.of("player", player.getName(),
+                        "badge", badgeId)
+        );
         return Command.SINGLE_SUCCESS;
     }
 
     private static int list(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
-        sender.sendMessage("Currently loaded badges: ");
+        var messageService = Badges.getMessageService();
+
+        messageService.sendMessage(
+                sender,
+                "badge_list_all",
+                Collections.emptyMap()
+        );
 
         Badges.getRegisteredBadges()
                 .forEach((badgeId, badge) ->
-                        sender.sendMessage(String.format("- %s (%s)", badgeId, badge)));
+                        messageService.sendMessage(
+                                sender,
+                                "badge_list_entry",
+                                Map.of("badge_id", badgeId,
+                                        "badge_name", badge)
+                        )
+                );
 
         if (Badges.getRegisteredBadges().isEmpty()) {
-            sender.sendMessage("None");
+            messageService.sendMessage(
+                    sender,
+                    "badge_list_all_none",
+                    Collections.emptyMap()
+            );
         }
         return Command.SINGLE_SUCCESS;
     }
 
     private static int listPlayer(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
+        var messageService = Badges.getMessageService();
         Map<String, String> badgeRegistry = Badges.getRegisteredBadges();
 
         Player player = Util.getPlayerArgument(ctx, "player");
         if (player == null) {
-            ctx.getSource().getSender().sendMessage("Player not found");
+            messageService.sendMessage(
+                    sender,
+                    "obj_not_found",
+                    Map.of("obj", "Player")
+            );
             return Command.SINGLE_SUCCESS;
         }
         String playerName = player.getName();
 
-        sender.sendMessage("Currently owned badges (%s): ".formatted(playerName));
+        messageService.sendMessage(
+                sender,
+                "badge_list_player_owned",
+                Map.of("player", playerName)
+        );
         for (String badgeId : Badges.getBadgeStore().getOwnedBadges(player.getUniqueId())) {
             var badge = badgeRegistry.getOrDefault(badgeId, "unknown");
-            sender.sendMessage("- %s (%s)".formatted(badgeId, badge));
+            messageService.sendMessage(
+                    sender,
+                    "badge_list_entry",
+                    Map.of("badge_id", badgeId,
+                            "badge_name", badge)
+            );
         }
 
-        sender.sendMessage("Currently worn badges (%s): ".formatted(playerName));
+        messageService.sendMessage(
+                sender,
+                "badge_list_player_worn",
+                Map.of("player", playerName)
+        );
         for (String badgeId : Badges.getBadgeStore().getWearingBadges(player.getUniqueId())) {
             var badge = badgeRegistry.getOrDefault(badgeId, "unknown");
-            sender.sendMessage("- %s (%s)".formatted(badgeId, badge));
+            messageService.sendMessage(
+                    sender,
+                    "badge_list_entry",
+                    Map.of("badge_id", badgeId,
+                            "badge_name", badge)
+            );
         }
 
         return Command.SINGLE_SUCCESS;
@@ -159,33 +231,39 @@ public class Badge {
 
     private static int wearPickSlot(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
+        var messageService = Badges.getMessageService();
+
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Only players can wear badges!");
+            messageService.sendMessage(sender, "badge_wear_only_players", Collections.emptyMap());
             return Command.SINGLE_SUCCESS;
         }
 
         String badgeId = StringArgumentType.getString(ctx, "badge");
         if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
-            sender.sendMessage(badgeId + " not found!");
+            messageService.sendMessage(sender, "obj_not_found", Map.of("obj", badgeId));
             return Command.SINGLE_SUCCESS;
         }
 
         var badgeStore = Badges.getBadgeStore();
         var ownedBadges = badgeStore.getOwnedBadges(player.getUniqueId());
         if (ownedBadges.isEmpty()) {
-            sender.sendMessage("You don't own any badges!");
+            messageService.sendMessage(sender, "badge_wear_none_owned", Collections.emptyMap());
             return Command.SINGLE_SUCCESS;
         }
 
         if (!ownedBadges.contains(badgeId)) {
-            sender.sendMessage("You don't own " + badgeId);
+            messageService.sendMessage(sender, "badge_wear_not_owned", Map.of("badge", badgeId));
             return Command.SINGLE_SUCCESS;
         }
 
         var wornBadges = badgeStore.getWearingBadges(player.getUniqueId());
         int slot = IntegerArgumentType.getInteger(ctx, "slot");
         if (slot > wornBadges.size() + 1) {
-            sender.sendMessage("You can assign only up to %s slots".formatted(wornBadges.size() + 1));
+            messageService.sendMessage(
+                    sender,
+                    "badge_wear_invalid_slot",
+                    Map.of("max_slots", String.valueOf(wornBadges.size() + 1))
+            );
             return Command.SINGLE_SUCCESS;
         }
 
@@ -200,21 +278,28 @@ public class Badge {
 
         // TODO: call to update LP-managing service
 
-        sender.sendMessage("Successfully updated slot %s".formatted(slot));
+        messageService.sendMessage(
+                sender,
+                "badge_wear_slot_updated",
+                Map.of("slot", String.valueOf(slot))
+        );
 
         return Command.SINGLE_SUCCESS;
     }
 
     private static int removeWearing(CommandContext<CommandSourceStack> ctx) {
         var sender = ctx.getSource().getSender();
+        var messageService = Badges.getMessageService();
+
         if (!(sender instanceof Player player)) {
-            sender.sendMessage("Only players can wear badges!");
+            messageService.sendMessage(sender, "badge_wear_only_players", Collections.emptyMap());
             return Command.SINGLE_SUCCESS;
         }
 
         var badgeStore = Badges.getBadgeStore();
-        String badgeId = StringArgumentType.getString(ctx, "badgeId");
+        String badgeId = StringArgumentType.getString(ctx, "badge");
         if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
+            messageService.sendMessage(sender, "obj_not_found", Map.of("obj", badgeId));
             return Command.SINGLE_SUCCESS;
         }
 

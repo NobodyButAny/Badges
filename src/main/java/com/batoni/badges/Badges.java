@@ -2,6 +2,7 @@ package com.batoni.badges;
 
 import com.batoni.badges.command.Badge;
 import com.batoni.badges.data.YmlBadgeStore;
+import com.batoni.badges.exception.PluginLoadException;
 import com.batoni.badges.format.MessageService;
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import net.kyori.adventure.text.minimessage.MiniMessage;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @SuppressWarnings("UnstableApiUsage")
 public final class Badges extends JavaPlugin {
 
-    private static final List<String> LOCALE_NAMES = List.of("en");
+    private static final List<String> LOCALE_NAMES = List.of("en", "ru");
 
     private static Badges instance;
 
@@ -45,23 +46,32 @@ public final class Badges extends JavaPlugin {
         return instance;
     }
 
+    public static MessageService getMessageService() {
+        return messageService;
+    }
+
     @Override
     public void onEnable() {
         instance = this;
 
-        loadDependencies();
-        loadConfig();
-        loadDataStore();
-        loadMessageService();
-        registerCommands();
+        try {
+            loadDependencies();
+            loadConfig();
+            loadDataStore();
+            loadMessageService();
+            registerCommands();
+        } catch (PluginLoadException e) {
+            e.printStackTrace();
+        }
+        getLogger().info("Loading finished!");
     }
 
-    private void loadDependencies() {
+    private void loadDependencies() throws PluginLoadException {
         var provider = Bukkit.getServicesManager().getRegistration(LuckPerms.class);
         if (provider == null) {
             getLogger().severe("LuckPerms not found!");
             Bukkit.getPluginManager().disablePlugin(this);
-            return;
+            throw new PluginLoadException("Dependency load failed!");
         }
         luckPerms = provider.getProvider();
     }
@@ -88,12 +98,13 @@ public final class Badges extends JavaPlugin {
         }
     }
 
-    private void loadDataStore() {
+    private void loadDataStore() throws PluginLoadException {
         try {
             badgeStore = new YmlBadgeStore(getDataFolder(), "data.yml");
         } catch (IOException e) {
             getLogger().severe("Failed to initialize badge data.yml store!");
             Bukkit.getPluginManager().disablePlugin(this);
+            throw new PluginLoadException("DataStore load failed");
         }
     }
 
@@ -103,7 +114,7 @@ public final class Badges extends JavaPlugin {
         });
     }
 
-    private void loadMessageService() {
+    private void loadMessageService() throws PluginLoadException {
         File dataFolder = getDataFolder();
         List<File> directories = Util.getDirectoryList(dataFolder);
 
@@ -120,6 +131,7 @@ public final class Badges extends JavaPlugin {
             if (localeFiles.isEmpty()) {
                 getLogger().severe("Internal error! Loaded 0 default locales");
                 Bukkit.getPluginManager().disablePlugin(this);
+                throw new PluginLoadException("MessageService load failed");
             }
         }
 
@@ -131,10 +143,12 @@ public final class Badges extends JavaPlugin {
         } catch (IOException e) {
             getLogger().severe("Internal error! MessageService load error!");
             Bukkit.getPluginManager().disablePlugin(this);
+            throw new PluginLoadException("MessageService load failed", e);
         }
+        getLogger().info("MessageService language - %s".formatted(messageService.getCurrentLocale()));
     }
 
-    private void loadDefaultLocales() {
+    private void loadDefaultLocales() throws PluginLoadException {
         for (String name : LOCALE_NAMES) {
             File defaultLocaleN = new File(getDataFolder(), "locale/%s.yml".formatted(name));
             try {
@@ -145,6 +159,7 @@ public final class Badges extends JavaPlugin {
             } catch (IOException e) {
                 getLogger().severe("Failed to load default locale (%s)!".formatted(name));
                 Bukkit.getPluginManager().disablePlugin(this);
+                throw new PluginLoadException("Default locales load failed");
             }
         }
     }
