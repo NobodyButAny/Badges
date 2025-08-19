@@ -41,7 +41,7 @@ public class MessageService {
             this.locales.put(locale.language(), locale);
         }
 
-        if (!this.locales.containsKey(defaultLocale)) {
+        if (defaultLocale == null || defaultLocale.isEmpty() || !this.locales.containsKey(defaultLocale)) {
             this.fallbackLocale = this.locales.containsKey("en")
                     ? "en"
                     : this.locales.keySet().stream().findFirst().get();

@@ -1,0 +1,28 @@
+# General
+obj_not_found: "<obj> not found!"
+player_not_found: "Player <player> not found"
+no_badges_registered: "No badges are registered"
+
+# Grant command
+badge_grant_success: "Successfully granted <badge> to <player>"
+badge_grant_already_owned: "<player> already owns <badge>"
+
+# Take command
+badge_take_success: "Successfully taken <badge> from <player>"
+
+# Wear command
+badge_wear_only_players: "Only players can wear badges!"
+badge_wear_none_owned: "You don't own any badges!"
+badge_wear_not_owned: "You don't own <badge>"
+badge_wear_invalid_slot: "You can assign only up to <max_slots> slots"
+badge_wear_slot_updated: "Successfully updated slot <slot>"
+
+# Remove command
+badge_remove_success: "Successfully removed <badge> from your worn badges"
+
+# List command
+badge_list_all: "Currently loaded badges:"
+badge_list_all_none: "None"
+badge_list_player_owned: "Currently owned badges (<player>):"
+badge_list_player_worn: "Currently worn badges (<player>):"
+badge_list_entry: "- <badge_id> (<badge_name>)"

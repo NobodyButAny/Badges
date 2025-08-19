@@ -8,7 +8,8 @@ import net.kyori.adventure.text.minimessage.tag.Tag;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
 import org.bukkit.entity.Player;
 
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 import java.util.function.Predicate;
 
 public class Util {
@@ -36,4 +37,19 @@ public class Util {
     public static TagResolver insertingTextResolver(Map.Entry<String, String> entry) {
         return insertingTextResolver(entry.getKey(), entry.getValue());
     }
+
+    public static List<File> getDirectoryList(File file) {
+        return Optional
+                .ofNullable(file.listFiles(File::isDirectory))
+                .map(Arrays::asList)
+                .orElse(Collections.emptyList());
+    }
+
+    public static List<File> getFileList(File file) {
+        return Optional
+                .ofNullable(file.listFiles(File::isFile))
+                .map(Arrays::asList)
+                .orElse(Collections.emptyList());
+    }
+
 }
