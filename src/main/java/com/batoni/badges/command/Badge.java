@@ -10,10 +10,13 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
+import net.luckperms.api.node.Node;
+import net.luckperms.api.node.types.PrefixNode;
 import org.bukkit.entity.Player;
 
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 @SuppressWarnings("UnstableApiUsage")
 public class Badge {
@@ -59,6 +62,7 @@ public class Badge {
                 .then(grantCommand)
                 .then(takeCommand)
                 .then(wearCommand)
+                .then(removeCommand)
                 .then(listCommand)
                 .build();
     }
@@ -239,7 +243,8 @@ public class Badge {
         }
 
         String badgeId = StringArgumentType.getString(ctx, "badge");
-        if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
+        var badgeRegistry = Badges.getRegisteredBadges();
+        if (!badgeRegistry.containsKey(badgeId)) {
             messageService.sendMessage(sender, "obj_not_found", Map.of("obj", badgeId));
             return Command.SINGLE_SUCCESS;
         }
@@ -276,7 +281,13 @@ public class Badge {
 
         badgeStore.setWearingBadges(player.getUniqueId(), wornBadges);
 
-        // TODO: call to update LP-managing service
+        var lp = Badges.getLuckPerms();
+        lp.getUserManager()
+                .loadUser(player.getUniqueId())
+                .thenAcceptAsync(user -> {
+                    user.data().add(PrefixNode.builder(badgeRegistry.get(badgeId), slot).build());
+                    lp.getUserManager().saveUser(user);
+                });
 
         messageService.sendMessage(
                 sender,
@@ -297,11 +308,30 @@ public class Badge {
         }
 
         var badgeStore = Badges.getBadgeStore();
+        var badgeRegistry = Badges.getRegisteredBadges();
         String badgeId = StringArgumentType.getString(ctx, "badge");
-        if (!Badges.getRegisteredBadges().containsKey(badgeId)) {
+        if (!badgeRegistry.containsKey(badgeId)) {
             messageService.sendMessage(sender, "obj_not_found", Map.of("obj", badgeId));
             return Command.SINGLE_SUCCESS;
         }
+
+        badgeStore.removeWearingBadges(player.getUniqueId(), badgeId);
+
+        var lp = Badges.getLuckPerms();
+        lp.getUserManager()
+                .loadUser(player.getUniqueId())
+                .thenAcceptAsync(user -> {
+                    Optional<Node> prNode = user.data()
+                            .toCollection()
+                            .stream()
+                            .filter(node -> node instanceof PrefixNode)
+                            .filter(node -> node.getKey().endsWith(badgeRegistry.get(badgeId)))
+                            .findFirst();
+                    prNode.ifPresent(node -> user.data().remove(node));
+                    lp.getUserManager().saveUser(user);
+                });
+
+        messageService.sendMessage(sender, "badge_remove_success", Map.of("badge", badgeId));
 
         return Command.SINGLE_SUCCESS;
     }
